@@ -1,7 +1,7 @@
 local PatchGrid = {}
 PatchGrid.__index = PatchGrid
 
-function PatchGrid.new(width, height)
+function PatchGrid.new(width, height, grassRegrowthTime, grass)
 	local self = setmetatable({}, PatchGrid)
 	self.width = width
 	self.height = height
@@ -16,26 +16,59 @@ function PatchGrid.new(width, height)
 			patch.Position = Vector3.new(x * 4, 0, y * 4)
 			patch.Name = "Patch"
 			patch.Material = Enum.Material.SmoothPlastic
-			
-			local r = math.random(15, 30)
-			local g = math.random(70, 100)
-			local b = math.random(15, 20)
+
+			local isGrass = true
+			if grass then
+				isGrass = math.random() < 0.5
+			end
+
+			local r, g, b
+			if isGrass then
+				r = math.random(15, 30)
+				g = math.random(70, 100)
+				b = math.random(15, 20)
+			else
+				r = math.random(75, 100)
+				g = math.random(40, 60)
+				b = math.random(10, 25)
+			end
 
 			patch.Color = Color3.fromRGB(r, g, b)
-
 			patch.Parent = workspace.PatchesFolder
 
 			self.grid[x][y] = {
 				model = patch,
 				x = x,
 				y = y,
-				hasGrass = true,
+				hasGrass = isGrass,
+				countdown = isGrass and grassRegrowthTime or math.random(0, grassRegrowthTime),
 				occupant = {}
 			}
 		end
 	end
 
 	return self
+end
+
+function PatchGrid:UpdateGrassRegrowth(grassRegrowthTime)
+	for x = 1, self.width do
+		for y = 1, self.height do
+			local patch = self.grid[x][y]
+			if not patch.hasGrass then
+				if patch.countdown <= 0 then
+					local r = math.random(15, 30)
+					local g = math.random(70, 100)
+					local b = math.random(15, 20)
+					patch.model.Color = Color3.fromRGB(r, g, b)
+					
+					patch.hasGrass = true
+					patch.countdown = grassRegrowthTime
+				else
+					patch.countdown -= 1
+				end
+			end
+		end
+	end
 end
 
 function PatchGrid:GetRandomEmptyPatch()

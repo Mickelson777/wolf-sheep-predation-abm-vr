@@ -98,14 +98,14 @@ function Graph.new(Frame)
 	-- Rerender if the frame changes size since our lines will be all wonky
 	GraphHandler.Frame:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
 		local Size = GraphHandler.Frame.AbsoluteSize
-		wait(0.04)
+		task.wait(0.04)
 		if Size == GraphHandler.Frame.AbsoluteSize then
 			GraphHandler.Render()
 		end
 	end)
 	
 	function GraphHandler.Theme(newTheme)
-		wait()
+		task.wait()
 		-- Make sure we have latest theme data
 		Theme = {
 			Name = newTheme.Name or "Dark";
@@ -130,7 +130,7 @@ function Graph.new(Frame)
 			return
 		end
 		
-		while Busy do wait(0.1) end
+		while Busy do task.wait(0.1) end
 		Busy = true
 		
 		-- Clear old graph values
@@ -305,8 +305,16 @@ function Graph.new(Frame)
 		Busy = false
 	end
 	
+	function GraphHandler.Clear()
+		GraphHandler.Data = {}
+
+		YMarkers:ClearAllChildren()
+		GraphingFrame:ClearAllChildren()
+		KeyNames:ClearAllChildren()
+	end
+	
 	return setmetatable({}, {
-		__index = function(t,Key)
+		__index = function(t, Key)
 			return GraphHandler[Key]
 		end;
 		__newindex = function(t, Key, Value)

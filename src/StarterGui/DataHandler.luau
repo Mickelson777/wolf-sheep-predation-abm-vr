@@ -11,11 +11,12 @@ local populationData = {
 	Sheep = {}
 }
 
+graphGUI.UIStroke.Enabled = true
 local GraphHandler = GraphModule.new(graphGUI)
 GraphHandler.Resolution = 100  -- arbitrary default
 GraphHandler.BaselineZero = true
 
-sendDataEvent.OnClientEvent:Connect(function(data)
+sendDataEvent.OnClientEvent:Connect(function(data, reset)
 	local t = #data.time
 
 	dataGUI.WolfPopulation.Text = "Wolves: " .. data.wolves[t]
@@ -26,6 +27,15 @@ sendDataEvent.OnClientEvent:Connect(function(data)
 		populationData.Wolves[i] = data.wolves[i]
 		populationData.Sheep[i] = data.sheep[i]
 	end
-
-	GraphHandler.Data = populationData
+	
+	if reset then
+		GraphHandler:Clear()
+		
+		populationData = {
+			Wolves = {},
+			Sheep = {}
+		}
+	else
+		GraphHandler.Data = populationData
+	end
 end)
