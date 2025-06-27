@@ -19,24 +19,28 @@ function Sheep.new(model, grid, startingPos, reproduce, energyVar)
 	return self
 end
 
+--[[
+rather than doing a randomized selection of the 8 surrounding patches and moving towards the exact center of each,
+randomly pick an angle between 50 degrees left and 50 degrees right, then move forward one patch in that direction.
+]]
 function Sheep:Move()
 	local currentPos = self.model:GetPivot().Position
 
-	-- all 8 possible surrounding patches
-	local dx, dz
-	repeat
-		dx = math.random(-1, 1)
-		dz = math.random(-1, 1)
-	until dx ~= 0 or dz ~= 0 -- prevent not moving
+	local randomAngleDeg = math.random(-50, 50)
+	local randomAngleRad = math.rad(randomAngleDeg)
 
-	local offset = Vector3.new(dx * 4, 0, dz * 4)
-	local newPos = currentPos + offset
+	local forward = self.model:GetPivot().LookVector
+	local direction = Vector3.new(
+		math.cos(randomAngleRad) * forward.X - math.sin(randomAngleRad) * forward.Z,
+		0,
+		math.sin(randomAngleRad) * forward.X + math.cos(randomAngleRad) * forward.Z
+	).Unit
 
+	local newPos = currentPos + direction * 4
 	local wrappedPos = Toroidal.wrapPosition(newPos, 50, 50, 4)
-	local snappedPos = Toroidal.snapToGrid(wrappedPos, 4)
 
-	self.model:PivotTo(CFrame.new(snappedPos))
-	self:UpdatePatchTracking(snappedPos)
+	self.model:PivotTo(CFrame.lookAt(wrappedPos, wrappedPos + direction))
+	self:UpdatePatchTracking(wrappedPos)
 end
 
 function Sheep:Step(grass)

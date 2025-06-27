@@ -97,10 +97,15 @@ local function setupSimulation()
 	-- spawn sheep
 	for i = 1, parameters.InitSheep do
 		local patch = grid:GetRandomEmptyPatch()
+		local randomYRotation = math.rad(math.random(0, 359))
+		local position = patch.model.Position + Vector3.new(0, 2.5, 0)
+		local orientation = CFrame.Angles(0, randomYRotation, 0)
+		local startingCFrame = CFrame.new(position) * orientation
+
 		local model = ReplicatedStorage.Agents.Sheep:Clone()
-		local startingCFrame = CFrame.new(patch.model.Position + Vector3.new(0, 2, 0))
 		model:PivotTo(startingCFrame)
 		model.Parent = workspace.AgentFolder
+
 		local sheep = Sheep.new(model, grid, startingCFrame.Position, false, parameters.SheepGain)
 		table.insert(sheepList, sheep)
 	end
@@ -108,16 +113,22 @@ local function setupSimulation()
 	-- spawn wolves
 	for i = 1, parameters.InitWolves do
 		local patch = grid:GetRandomEmptyPatch()
+		local randomYRotation = math.rad(math.random(0, 359))
+		local position = patch.model.Position + Vector3.new(0, 2.5, 0)
+		local orientation = CFrame.Angles(0, randomYRotation, 0)
+		local startingCFrame = CFrame.new(position) * orientation
+
 		local model = ReplicatedStorage.Agents.Wolf:Clone()
-		local startingCFrame = CFrame.new(patch.model.Position + Vector3.new(0, 2, 0))
 		model:PivotTo(startingCFrame)
 		model.Parent = workspace.AgentFolder
+
 		local wolf = Wolf.new(model, grid, startingCFrame.Position, false, parameters.WolfGain)
 		table.insert(wolfList, wolf)
 	end
 end
 
 local function shuffleList(list)
+	if #list <= 1 then return end
 	for i = #list, 2, -1 do
 		local j = math.random(1, i)
 		list[i], list[j] = list[j], list[i]
@@ -129,6 +140,15 @@ local function runSimulation()
 		if not simulationPaused then
 			shuffleList(sheepList)
 			shuffleList(wolfList)
+			
+			for x = 1, grid.width do
+				for y = 1, grid.height do
+					local patch = grid.grid[x][y]
+					if patch.occupant and #patch.occupant > 1 then
+						shuffleList(patch.occupant)
+					end
+				end
+			end
 
 			for i = #sheepList, 1, -1 do
 				local sheep = sheepList[i]
@@ -136,13 +156,11 @@ local function runSimulation()
 					if math.random() * 100 < parameters.SheepReproduce then
 						sheep:Reproduce(sheep, sheepList, grid)
 					end
-
+					
+					sheep:Step(grass)
 					if grass then
-						sheep:Step(grass)
 						sheep:Eat(parameters.GrassRegrowthTime, parameters.SheepGain)
 					end
-
-					sheep:Step()
 				else
 					table.remove(sheepList, i)
 				end
@@ -165,7 +183,7 @@ local function runSimulation()
 			grid:UpdateGrassRegrowth(parameters.GrassRegrowthTime)
 			updateGraphData(false)
 		end
-		task.wait(0.15)
+		task.wait(0.1)
 	end
 end
 

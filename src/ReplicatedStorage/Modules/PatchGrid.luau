@@ -72,31 +72,35 @@ function PatchGrid:UpdateGrassRegrowth(grassRegrowthTime)
 end
 
 function PatchGrid:GetRandomEmptyPatch()
-	local tries = 100
-	while tries > 0 do
-		local x = math.random(1, self.width)
-		local y = math.random(1, self.height)
-		local patch = self.grid[x][y]
-		
-		if next(patch.occupant) == nil then
-			return patch
+	local emptyPatches = {}
+	for x = 1, self.width do
+		for y = 1, self.height do
+			if next(self.grid[x][y].occupant) == nil then
+				table.insert(emptyPatches, self.grid[x][y])
+			end
 		end
-		
-		tries -= 1
 	end
-	
-	return nil
+
+	if #emptyPatches == 0 then
+		return nil
+	end
+
+	return emptyPatches[math.random(1, #emptyPatches)]
 end
 
+--[[
+updated to calculate patch provided inexact positioning, unlike previously agents always moved towards the center of a patch.
+also, the indexing may be off, but it seems to work at the moment.
+]]
 function PatchGrid:GetPatchFromWorldPosition(pos)
 	local patchSize = 4
-	local xIndex = math.floor(pos.X / patchSize + 0.5)
-	local yIndex = math.floor(pos.Z / patchSize + 0.5)
+	local xIndex = math.clamp(math.floor(pos.X / patchSize) + 1, 1, self.width)
+	local zIndex = math.clamp(math.floor(pos.Z / patchSize) + 1, 1, self.height)
 
-	if self.grid[xIndex] and self.grid[xIndex][yIndex] then
-		return self.grid[xIndex][yIndex]
+	if self.grid[xIndex] and self.grid[xIndex][zIndex] then
+		return self.grid[xIndex][zIndex]
 	end
-	
+
 	return nil
 end
 
@@ -108,8 +112,8 @@ end
 
 function PatchGrid:RemoveOccupant(patch, agent)
 	if patch and agent then
-		for i, occ in ipairs(patch.occupant) do
-			if occ == agent then
+		for i = #patch.occupant, 1, -1 do
+			if patch.occupant[i] == agent then
 				table.remove(patch.occupant, i)
 				break
 			end

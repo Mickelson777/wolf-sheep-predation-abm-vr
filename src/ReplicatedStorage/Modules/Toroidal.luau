@@ -1,18 +1,13 @@
 local Toroidal = {}
 
-function Toroidal.wrapPosition(pos, gridWidth, gridHeight, patchSize)
+function Toroidal.wrapPosition(pos, gridWidth, gridHeight, patchSize) -- revised for inexact movement (not center of patch)
 	local minX = patchSize
 	local maxX = gridWidth * patchSize
 	local minZ = patchSize
 	local maxZ = gridHeight * patchSize
 
-	local x = pos.X
-	local z = pos.Z
-
-	if x < minX then x = maxX end
-	if x > maxX then x = minX end
-	if z < minZ then z = maxZ end
-	if z > maxZ then z = minZ end
+	local x = ((pos.X - minX) % (maxX - minX)) + minX
+	local z = ((pos.Z - minZ) % (maxZ - minZ)) + minZ
 
 	return Vector3.new(x, pos.Y, z)
 end

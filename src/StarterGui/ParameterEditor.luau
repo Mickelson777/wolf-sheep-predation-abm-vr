@@ -11,7 +11,7 @@ local parameterChangeEvent = ReplicatedStorage:FindFirstChild("ParameterChange")
 -- Model Selection UI
 ----------------------------------------------------------------------------
 local tweenInfo = TweenInfo.new(
-	0.3, 
+	0.2, 
 	Enum.EasingStyle.Quad,
 	Enum.EasingDirection.Out,
 	0,
