@@ -19,7 +19,7 @@ local tweenInfo = TweenInfo.new(
 	0
 )
 
-local guiSelect = script.Parent.ModelVersion
+local guiSelect = script.Parent.SurfaceGui.ModelVersion
 
 local open = false
 
@@ -27,7 +27,7 @@ local openDropdownTween = TweenService:Create(guiSelect.Menu, tweenInfo, {Size =
 
 local closeDropdownTween = TweenService:Create(guiSelect.Menu, tweenInfo, {Size = UDim2.new(1, 0, 0, 0)})
 
-script.Parent.ModelVersion.Activated:Connect(function()
+guiSelect.Activated:Connect(function()
 	if not open then
 		openDropdownTween:Play()
 		open = true
@@ -54,7 +54,7 @@ end)
 
 -- Starting Buttons
 ----------------------------------------------------------------------------
-local guiMain = script.Parent
+local guiMain = script.Parent.SurfaceGui
 
 guiMain.SetUp.Activated:Connect(function()
 	startEvent:FireServer("Setup")
@@ -67,10 +67,27 @@ end)
 
 -- Sliders for Parameters
 ----------------------------------------------------------------------------
+local UIPart = workspace:WaitForChild("VRGui")
+local Player = Players.LocalPlayer
+local Mouse = Player:GetMouse()
 local activeSlider = nil
 
+local function CalculateScalePosition(Part, Axis)
+	local Mouse3DPosition = Mouse.Hit.Position
+	local StartAxis = Part.Position[Axis] - (Part.Size[Axis] / 2)
+	local EndAxis = Part.Position[Axis] + (Part.Size[Axis] / 2)
+	local Range = EndAxis - StartAxis
+	local Distance = Mouse3DPosition[Axis] - StartAxis
+	local Percentage = math.clamp(Distance / Range, 0, 1)
+
+	if Axis == "Y" then
+		Percentage = 1 - Percentage
+	end
+
+	return Percentage
+end
+
 local function setupSlider(InputSliderGui, InputMaxVal, InputMinVal)
-	local Mouse = Players.LocalPlayer:GetMouse()
 	local Slider = InputSliderGui
 	local Fill = Slider.Fill
 	local Trigger = Slider.Trigger
@@ -79,15 +96,14 @@ local function setupSlider(InputSliderGui, InputMaxVal, InputMinVal)
 
 	local MaxValue = InputMaxVal
 	local MinValue = InputMinVal
-
 	local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad)
 
+	-- Init fill size
 	Fill.Size = UDim2.fromScale((Output.Value - MinValue) / (MaxValue - MinValue), 1)
 	OutputLabel.Text = tostring(math.round(Output.Value))
 
 	local function updateSlider()
-		local mouseOffset = Mouse.X - Slider.AbsolutePosition.X
-		local normalized = math.clamp(mouseOffset / Slider.AbsoluteSize.X, 0, 1)
+		local normalized = CalculateScalePosition(UIPart, "X") -- horizontal sliders
 		local clampedValue = MinValue + normalized * (MaxValue - MinValue)
 
 		TweenService:Create(Fill, tweenInfo, {
@@ -97,10 +113,6 @@ local function setupSlider(InputSliderGui, InputMaxVal, InputMinVal)
 		Output.Value = clampedValue
 		OutputLabel.Text = tostring(math.round(clampedValue))
 	end
-
-	Fill:GetPropertyChangedSignal("Size"):Connect(function()
-		OutputLabel.Text = tostring(math.round(Output.Value))
-	end)
 
 	local function ActivateSlider()
 		while activeSlider == Slider do
@@ -124,7 +136,6 @@ UserInputService.InputEnded:Connect(function(input)
 				local rounded = math.round(Output.Value)
 				parameterChangeEvent:FireServer(activeSlider.Name, rounded)
 			end
-			
 			activeSlider = nil
 		end
 	end
@@ -136,5 +147,5 @@ setupSlider(guiMain.GrassRegrowthTime, 100, 0)
 setupSlider(guiMain.SheepGain, 50, 0)
 setupSlider(guiMain.WolfGain, 100, 0)
 setupSlider(guiMain.SheepReproduce, 20, 1)
-setupSlider(guiMain.WolfReproduce, 20, 0)
+setupSlider(guiMain.WolfReproduce, 20, 0)	
 ----------------------------------------------------------------------------

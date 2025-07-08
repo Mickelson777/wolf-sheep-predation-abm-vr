@@ -14,6 +14,8 @@ function AgentBase.new(model, grid, startingPos)
 	self.currentPatch = grid:GetPatchFromWorldPosition(startingPos)
 	self.type = "Agent"
 	
+	model.PrimaryPart:SetNetworkOwner(nil)
+	
 	return self
 end
 
@@ -31,6 +33,5 @@ function AgentBase:UpdatePatchTracking(newWorldPos)
 end
 
 function AgentBase:Move() end  -- subclasses take over
-function AgentBase:Step() end  -- time-step behavior
 
 return AgentBase

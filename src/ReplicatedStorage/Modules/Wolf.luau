@@ -35,7 +35,9 @@ function Wolf:Move()
 	local newPos = currentPos + direction * 4
 	local wrappedPos = Toroidal.wrapPosition(newPos, 50, 50, 4)
 
-	self.model:PivotTo(CFrame.lookAt(wrappedPos, wrappedPos + direction))
+	-- self.model:PivotTo(CFrame.lookAt(wrappedPos, wrappedPos + direction))
+	self.model:FindFirstChildOfClass("Humanoid"):MoveTo(wrappedPos)
+
 	self:UpdatePatchTracking(wrappedPos)
 end
 
@@ -54,15 +56,6 @@ function Wolf:Eat(wolfGainFromFood)
 	end
 end
 
-function Wolf:Step()
-	self:Move()
-	self.energy -= 1
-	if self.energy <= 0 then
-		self.alive = false
-		self.model:Destroy()
-	end
-end
-
 function Wolf:Reproduce(parent, list, grid)
 	if not parent.model or not parent.model.PrimaryPart then -- check for existence in case of parent dying midway through
 		return
@@ -73,11 +66,11 @@ function Wolf:Reproduce(parent, list, grid)
 	model:PivotTo(startingCFrame)
 	model.Parent = workspace.AgentFolder
 
-	local wolf = Wolf.new(model, grid, startingCFrame.Position, true, parent.energy / 2)
+	parent.energy /= 2
+
+	local wolf = Wolf.new(model, grid, startingCFrame.Position, true, parent.energy)
 	table.insert(list, wolf)
 	wolf:Move()
-
-	parent.energy /= 2
 end
 
 return Wolf

@@ -98,7 +98,7 @@ local function setupSimulation()
 	for i = 1, parameters.InitSheep do
 		local patch = grid:GetRandomEmptyPatch()
 		local randomYRotation = math.rad(math.random(0, 359))
-		local position = patch.model.Position + Vector3.new(0, 2.5, 0)
+		local position = patch.model.Position + Vector3.new(0, 2.25, 0)
 		local orientation = CFrame.Angles(0, randomYRotation, 0)
 		local startingCFrame = CFrame.new(position) * orientation
 
@@ -114,7 +114,7 @@ local function setupSimulation()
 	for i = 1, parameters.InitWolves do
 		local patch = grid:GetRandomEmptyPatch()
 		local randomYRotation = math.rad(math.random(0, 359))
-		local position = patch.model.Position + Vector3.new(0, 2.5, 0)
+		local position = patch.model.Position + Vector3.new(0, 4, 0)
 		local orientation = CFrame.Angles(0, randomYRotation, 0)
 		local startingCFrame = CFrame.new(position) * orientation
 
@@ -153,14 +153,26 @@ local function runSimulation()
 			for i = #sheepList, 1, -1 do
 				local sheep = sheepList[i]
 				if sheep.alive then
-					if math.random() * 100 < parameters.SheepReproduce then
-						sheep:Reproduce(sheep, sheepList, grid)
-					end
-					
-					sheep:Step(grass)
-					if grass then
-						sheep:Eat(parameters.GrassRegrowthTime, parameters.SheepGain)
-					end
+					task.spawn(function()
+						sheep:Move()
+
+						task.wait(0.15)
+
+						if grass then
+							sheep.energy -= 1
+							
+							sheep:Eat(parameters.GrassRegrowthTime, parameters.SheepGain)
+
+							if sheep.energy <= 0 then
+								sheep.alive = false
+								sheep.model:Destroy()
+							end
+						end
+
+						if math.random() * 100 < parameters.SheepReproduce then
+							sheep:Reproduce(sheep, sheepList, grid)
+						end
+					end)
 				else
 					table.remove(sheepList, i)
 				end
@@ -169,12 +181,24 @@ local function runSimulation()
 			for i = #wolfList, 1, -1 do
 				local wolf = wolfList[i]
 				if wolf.alive then
-					if math.random() * 100 < parameters.WolfReproduce then
-						wolf:Reproduce(wolf, wolfList, grid)
-					end
+					task.spawn(function()
+						wolf:Move()
 
-					wolf:Eat(parameters.WolfGain)
-					wolf:Step()
+						task.wait(0.15)
+
+						wolf.energy -= 1
+
+						wolf:Eat(parameters.WolfGain)
+
+						if wolf.energy <= 0 then
+							wolf.alive = false
+							wolf.model:Destroy()
+						end
+
+						if math.random() * 100 < parameters.WolfReproduce then
+							wolf:Reproduce(wolf, wolfList, grid)
+						end
+					end)
 				else
 					table.remove(wolfList, i)
 				end
@@ -183,7 +207,7 @@ local function runSimulation()
 			grid:UpdateGrassRegrowth(parameters.GrassRegrowthTime)
 			updateGraphData(false)
 		end
-		task.wait(0.1)
+		task.wait(0.25)
 	end
 end
 

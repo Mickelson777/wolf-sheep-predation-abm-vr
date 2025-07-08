@@ -26,9 +26,11 @@ randomly pick an angle between 50 degrees left and 50 degrees right, then move f
 function Sheep:Move()
 	local currentPos = self.model:GetPivot().Position
 
+	-- calculate random turning angle
 	local randomAngleDeg = math.random(-50, 50)
 	local randomAngleRad = math.rad(randomAngleDeg)
 
+	-- get current forward direction
 	local forward = self.model:GetPivot().LookVector
 	local direction = Vector3.new(
 		math.cos(randomAngleRad) * forward.X - math.sin(randomAngleRad) * forward.Z,
@@ -36,23 +38,15 @@ function Sheep:Move()
 		math.sin(randomAngleRad) * forward.X + math.cos(randomAngleRad) * forward.Z
 	).Unit
 
+	-- calculate new position and apply toroidal wrapping
 	local newPos = currentPos + direction * 4
 	local wrappedPos = Toroidal.wrapPosition(newPos, 50, 50, 4)
 
-	self.model:PivotTo(CFrame.lookAt(wrappedPos, wrappedPos + direction))
-	self:UpdatePatchTracking(wrappedPos)
-end
+	-- teleportation vs. smooth movement
+	-- self.model:PivotTo(CFrame.lookAt(wrappedPos, wrappedPos + direction))
+	self.model:FindFirstChildOfClass("Humanoid"):MoveTo(wrappedPos)
 
-function Sheep:Step(grass)
-	self:Move()
-	
-	if grass then
-		self.energy -= 1
-		if self.energy <= 0 then
-			self.alive = false
-			self.model:Destroy()
-		end
-	end
+	self:UpdatePatchTracking(wrappedPos)
 end
 
 function Sheep:Eat(grassRegrowthTime, sheepGainFromFood)
@@ -79,12 +73,12 @@ function Sheep:Reproduce(parent, list, grid)
 	local startingCFrame = CFrame.new(parent.model.PrimaryPart.Position)
 	model:PivotTo(startingCFrame)
 	model.Parent = workspace.AgentFolder
+	
+	parent.energy /= 2
 
-	local sheep = Sheep.new(model, grid, startingCFrame.Position, true, parent.energy / 2)
+	local sheep = Sheep.new(model, grid, startingCFrame.Position, true, parent.energy)
 	table.insert(list, sheep)
 	sheep:Move()
-
-	parent.energy /= 2
 end
 
 return Sheep

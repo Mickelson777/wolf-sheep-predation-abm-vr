@@ -3,8 +3,8 @@ local sendDataEvent = ReplicatedStorage:WaitForChild("SendData")
 
 local GraphModule = require(ReplicatedStorage.Modules.Graph)
 
-local dataGUI = script.Parent.Data
-local graphGUI = script.Parent.GraphFrame
+local dataGUI = script.Parent.SurfaceGui.Data
+local graphGUI = script.Parent.SurfaceGui.GraphFrame
 
 local populationData = {
 	Wolves = {},
