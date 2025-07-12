@@ -1,5 +1,5 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local sendDataEvent = ReplicatedStorage:WaitForChild("SendData")
+local sendDataEvent = ReplicatedStorage.Remote.GameRemote:WaitForChild("SendData")
 
 local GraphModule = require(ReplicatedStorage.Modules.Graph)
 

@@ -12,7 +12,7 @@ function PatchGrid.new(width, height, grassRegrowthTime, grass)
 		for y = 1, height do
 			local patch = Instance.new("Part")
 			patch.Anchored = true
-			patch.Size = Vector3.new(4, 0.1, 4)
+			patch.Size = Vector3.new(4, 1, 4)
 			patch.Position = Vector3.new(x * 4, 0, y * 4)
 			patch.Name = "Patch"
 			patch.Material = Enum.Material.SmoothPlastic

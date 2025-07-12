@@ -1,4 +1,5 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local AnimateAgentEvent = ReplicatedStorage.Remote.VisualRemote:WaitForChild("AnimateAgent")
 
 local AgentBase = require(script.Parent.AgentBase)
 local Toroidal = require(game.ReplicatedStorage.Modules.Toroidal)
@@ -15,6 +16,22 @@ function Sheep.new(model, grid, startingPos, reproduce, energyVar)
 	else
 		self.energy = math.random(0, energyVar * 2)
 	end
+	
+	model:SetAttribute("Energy", self.energy)
+	
+	-- update billboard gui for the energy
+	model:GetAttributeChangedSignal("Energy"):Connect(function()
+		local newEnergy = model:GetAttribute("Energy")
+
+		-- retrieve head safely
+		local head = model:FindFirstChild("Head") or model:WaitForChild("Head", 3)
+		if head then
+			local billboardGui = head:FindFirstChild("BillboardGui")
+			if billboardGui then
+				billboardGui.Frame.TextLabel.Text = "Energy: " .. newEnergy
+			end
+		end
+	end)
 	
 	return self
 end
@@ -61,6 +78,9 @@ function Sheep:Eat(grassRegrowthTime, sheepGainFromFood)
 		patch.model.Color = Color3.fromRGB(r, g, b)
 
 		self.energy += sheepGainFromFood
+		self.model:SetAttribute("Energy", self.energy)
+		
+		AnimateAgentEvent:FireAllClients(self.model, "Eat")
 	end
 end
 
@@ -74,7 +94,8 @@ function Sheep:Reproduce(parent, list, grid)
 	model:PivotTo(startingCFrame)
 	model.Parent = workspace.AgentFolder
 	
-	parent.energy /= 2
+	parent.energy = math.floor(parent.energy / 2 + 0.5)
+	parent.model:SetAttribute("Energy", parent.energy)
 
 	local sheep = Sheep.new(model, grid, startingCFrame.Position, true, parent.energy)
 	table.insert(list, sheep)

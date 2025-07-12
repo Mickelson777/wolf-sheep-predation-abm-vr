@@ -4,9 +4,9 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
-local startEvent = ReplicatedStorage:FindFirstChild("Start")
-local versionChangeEvent = ReplicatedStorage:FindFirstChild("VersionChange")
-local parameterChangeEvent = ReplicatedStorage:FindFirstChild("ParameterChange")
+local startEvent = ReplicatedStorage.Remote.GameRemote:WaitForChild("Start")
+local versionChangeEvent = ReplicatedStorage.Remote.GameRemote:WaitForChild("VersionChange")
+local parameterChangeEvent = ReplicatedStorage.Remote.GameRemote:WaitForChild("ParameterChange")
 
 -- Model Selection UI
 ----------------------------------------------------------------------------

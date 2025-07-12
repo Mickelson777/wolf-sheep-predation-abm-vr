@@ -11,7 +11,7 @@ local Players = game:GetService("Players")
 local VRService = game:GetService("VRService")
 
 -- Modules
-local VRLib = require(ReplicatedStorage:WaitForChild("VRLib"))
+local VRLib = require(ReplicatedStorage.Modules:WaitForChild("VRLib"))
 
 -- Player
 local plr = Players.LocalPlayer
@@ -26,15 +26,18 @@ local isRotating = false -- smooth camera turning
 local DEADZONE = 0.3 -- prevent accidental drift
 local MAX_ROTATION_SPEED = math.rad(90) -- max degrees per second
 
+-- Global Variable(s)
+_G.IsInAgentPOV = false
+
 --[[VR Initialization]]
 
 -- Check for VR support
 if VRService.VREnabled and UserInputService.VREnabled then
 	print("[" .. plr.Name .. "] VR detected")
-	ReplicatedStorage.Remote.VR_PlayerJoined:FireServer(true, scale, true)
+	ReplicatedStorage.Remote.VRRemote.VR_PlayerJoined:FireServer(true, scale, true)
 else
 	print("[" .. plr.Name .. "] no VR detected")
-	ReplicatedStorage.Remote.VR_PlayerJoined:FireServer(false)
+	ReplicatedStorage.Remote.VRRemote.VR_PlayerJoined:FireServer(false)
 	return
 end
 
@@ -58,11 +61,14 @@ char.Head.Transparency = 1
 --[[Main VR Update Loop]]
 
 RunService.RenderStepped:Connect(function(deltaTime)
+	-- Pause all VR camera control if spectating agent
+	if _G.IsInAgentPOV then return end
+	
 	local HeadCFrame, RightCFrame, LeftCFrame = VRLib.GetUserCFrames()
 	local Head, Right, Left = VRLib.CalculateUserCFrames(HeadCFrame, RightCFrame, LeftCFrame, Camera.CFrame)
 
 	-- Server update & local pose application
-	ReplicatedStorage.Remote.VR_UpdatePosition:FireServer(Head, Right, Left)
+	ReplicatedStorage.Remote.VRRemote.VR_UpdatePosition:FireServer(Head, Right, Left)
 	VRLib.ApplyUserCFrames(char.Head, char.LeftHand, char.RightHand, Head, Right, Left)
 
 	-- Character movement
@@ -72,7 +78,7 @@ RunService.RenderStepped:Connect(function(deltaTime)
 	Camera.CFrame = CFrame.new(Camera.CFrame.X, height, Camera.CFrame.Z) * Camera.CFrame.Rotation
 
 	-- Fire server to update collision info
-	ReplicatedStorage.Remote.VR_Touching:FireServer(char)
+	ReplicatedStorage.Remote.VRRemote.VR_Touching:FireServer(char)
 end)
 
 --[[Input Bindings]]
@@ -111,17 +117,17 @@ end, false, Enum.KeyCode.Thumbstick2)
 -- Left hand grab
 ContextActionService:BindAction("LeftGrip", function(_, state)
 	if state == Enum.UserInputState.Begin then
-		ReplicatedStorage.Remote.VR_Grabbed:FireServer("LeftHand", "begin")
+		ReplicatedStorage.Remote.VRRemote.VR_Grabbed:FireServer("LeftHand", "begin")
 	elseif state == Enum.UserInputState.End then
-		ReplicatedStorage.Remote.VR_Grabbed:FireServer("LeftHand", "end")
+		ReplicatedStorage.Remote.VRRemote.VR_Grabbed:FireServer("LeftHand", "end")
 	end
 end, false, Enum.KeyCode.ButtonL1)
 
 -- Right hand grab
 ContextActionService:BindAction("RightGrip", function(_, state)
 	if state == Enum.UserInputState.Begin then
-		ReplicatedStorage.Remote.VR_Grabbed:FireServer("RightHand", "begin")
+		ReplicatedStorage.Remote.VRRemote.VR_Grabbed:FireServer("RightHand", "begin")
 	elseif state == Enum.UserInputState.End then
-		ReplicatedStorage.Remote.VR_Grabbed:FireServer("RightHand", "end")
+		ReplicatedStorage.Remote.VRRemote.VR_Grabbed:FireServer("RightHand", "end")
 	end
 end, false, Enum.KeyCode.ButtonR1)

@@ -5,7 +5,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local PhysicsService = game:GetService("PhysicsService")
 
 -- Modules
-local VRLib = require(ReplicatedStorage:WaitForChild("VRLib"))
+local VRLib = require(ReplicatedStorage.Modules:WaitForChild("VRLib"))
 
 --[[Utility/Helper Function(s)]]
 
@@ -26,7 +26,7 @@ end
 
 --[[Player Joined (Character Creation)]]
 
-ReplicatedStorage.Remote.VR_PlayerJoined.OnServerEvent:Connect(function(player, isVR, scale, getAvatarAppearance)
+ReplicatedStorage.Remote.VRRemote.VR_PlayerJoined.OnServerEvent:Connect(function(player, isVR, scale, getAvatarAppearance)
 	if isVR then
 		print("Loading custom VR character model!")
 		VRLib.CreateCharacter(player, scale, getAvatarAppearance)
@@ -57,7 +57,7 @@ end)
 
 --[[Player Movement & Position Updates]]
 
-ReplicatedStorage.Remote.VR_UpdatePosition.OnServerEvent:Connect(function(player, HeadCFrame, RightCFrame, LeftCFrame)
+ReplicatedStorage.Remote.VRRemote.VR_UpdatePosition.OnServerEvent:Connect(function(player, HeadCFrame, RightCFrame, LeftCFrame)
 	local char = workspace:FindFirstChild(player.Name)
 	if char then
 		VRLib.ApplyUserCFrames(char:FindFirstChild("Head"), char:FindFirstChild("LeftHand"), char:FindFirstChild("RightHand"), HeadCFrame, RightCFrame, LeftCFrame)
@@ -66,7 +66,7 @@ end)
 
 --[[Object Grabbing Logic]]
 
-ReplicatedStorage.Remote.VR_Grabbed.OnServerEvent:Connect(function(player, handName, state)
+ReplicatedStorage.Remote.VRRemote.VR_Grabbed.OnServerEvent:Connect(function(player, handName, state)
 	local char = workspace:FindFirstChild(player.Name)
 	if not char then return end
 
@@ -104,7 +104,7 @@ end)
 
 --[[Touch Scan (Manual Invocation)]]
 
-ReplicatedStorage.Remote.VR_Touching.OnServerEvent:Connect(function(player, char)
+ReplicatedStorage.Remote.VRRemote.VR_Touching.OnServerEvent:Connect(function(player, char)
 	for _, part in pairs(char.LeftHand:GetTouchingParts()) do
 		NetworkTouch(player, char, part)
 	end

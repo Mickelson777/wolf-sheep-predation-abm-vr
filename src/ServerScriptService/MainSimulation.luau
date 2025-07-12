@@ -1,12 +1,16 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local sendDataEvent = ReplicatedStorage:FindFirstChild("SendData")
-local startEvent = ReplicatedStorage:FindFirstChild("Start")
-local parameterChangeEvent = ReplicatedStorage:WaitForChild("ParameterChange")
-local versionChangeEvent = ReplicatedStorage:FindFirstChild("VersionChange")
+
+local sendDataEvent = ReplicatedStorage.Remote.GameRemote:WaitForChild("SendData")
+local startEvent = ReplicatedStorage.Remote.GameRemote:WaitForChild("Start")
+local parameterChangeEvent = ReplicatedStorage.Remote.GameRemote:WaitForChild("ParameterChange")
+local versionChangeEvent = ReplicatedStorage.Remote.GameRemote:WaitForChild("VersionChange")
+
+local BecomeAgentRemoteEvents = ReplicatedStorage.Remote:WaitForChild("BecomeAgentRemote")
 
 local PatchGrid = require(ReplicatedStorage.Modules.PatchGrid)
 local Sheep = require(ReplicatedStorage.Modules.Sheep)
 local Wolf = require(ReplicatedStorage.Modules.Wolf)
+local BecomeAgentHandler = require(script.BecomeAgentHandler)
 
 local grid
 local grass = false
@@ -125,6 +129,9 @@ local function setupSimulation()
 		local wolf = Wolf.new(model, grid, startingCFrame.Position, false, parameters.WolfGain)
 		table.insert(wolfList, wolf)
 	end
+	
+	-- initialize become agent handler
+	BecomeAgentHandler.Initialize(sheepList, wolfList, parameters, grass)
 end
 
 local function shuffleList(list)
@@ -152,56 +159,73 @@ local function runSimulation()
 
 			for i = #sheepList, 1, -1 do
 				local sheep = sheepList[i]
-				if sheep.alive then
-					task.spawn(function()
-						sheep:Move()
 
-						task.wait(0.15)
-
-						if grass then
-							sheep.energy -= 1
-							
-							sheep:Eat(parameters.GrassRegrowthTime, parameters.SheepGain)
-
-							if sheep.energy <= 0 then
-								sheep.alive = false
-								sheep.model:Destroy()
-							end
-						end
-
-						if math.random() * 100 < parameters.SheepReproduce then
-							sheep:Reproduce(sheep, sheepList, grid)
-						end
-					end)
-				else
+				if not sheep.alive then
 					table.remove(sheepList, i)
+					continue
 				end
+
+				if sheep.isPossessed then
+					print("Sheep Skipped Because of Possession!")
+					continue
+				end
+				
+				-- alive and not possessed
+				task.spawn(function()
+					sheep:Move()
+					
+					task.wait(0.15)
+
+					if grass then
+						sheep.energy -= 1
+						sheep.model:SetAttribute("Energy", sheep.energy)
+						
+						sheep:Eat(parameters.GrassRegrowthTime, parameters.SheepGain)
+
+						if sheep.energy <= 0 then
+							sheep.alive = false
+							sheep.model:Destroy()
+						end
+					end
+
+					if math.random() * 100 < parameters.SheepReproduce then
+						sheep:Reproduce(sheep, sheepList, grid)
+					end
+				end)
 			end
 
 			for i = #wolfList, 1, -1 do
 				local wolf = wolfList[i]
-				if wolf.alive then
-					task.spawn(function()
-						wolf:Move()
 
-						task.wait(0.15)
-
-						wolf.energy -= 1
-
-						wolf:Eat(parameters.WolfGain)
-
-						if wolf.energy <= 0 then
-							wolf.alive = false
-							wolf.model:Destroy()
-						end
-
-						if math.random() * 100 < parameters.WolfReproduce then
-							wolf:Reproduce(wolf, wolfList, grid)
-						end
-					end)
-				else
+				if not wolf.alive then
 					table.remove(wolfList, i)
+					continue
 				end
+
+				if wolf.isPossessed then
+					print("Wolf Skipped Because of Possession!")
+					continue
+				end
+
+				task.spawn(function()
+					wolf:Move()
+					
+					task.wait(0.15)
+
+					wolf.energy -= 1
+					wolf.model:SetAttribute("Energy", wolf.energy)
+					
+					wolf:Eat(parameters.WolfGain)
+
+					if wolf.energy <= 0 then
+						wolf.alive = false
+						wolf.model:Destroy()
+					end
+
+					if math.random() * 100 < parameters.WolfReproduce then
+						wolf:Reproduce(wolf, wolfList, grid)
+					end
+				end)
 			end
 
 			grid:UpdateGrassRegrowth(parameters.GrassRegrowthTime)
