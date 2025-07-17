@@ -18,13 +18,22 @@ local function emitParticles(effect)
 	end
 end
 
-VFXEvent.OnClientEvent:Connect(function(cframe)
-	local BloodSplatter = VFXStorage:FindFirstChild("BloodSplatter"):Clone()
-	BloodSplatter.CFrame = cframe
-	BloodSplatter.Parent = workspace.Fx
-	
-	emitParticles(BloodSplatter)
-	Debris:AddItem(BloodSplatter, 2)
+VFXEvent.OnClientEvent:Connect(function(cframe, name)
+	if name == "BloodSplatter" then
+		local BloodSplatter = VFXStorage:FindFirstChild("BloodSplatter"):Clone()
+		BloodSplatter.CFrame = cframe
+		BloodSplatter.Parent = workspace.Fx
+
+		emitParticles(BloodSplatter)
+		Debris:AddItem(BloodSplatter, 2)
+	elseif name == "SmokeDeath" then
+		local SmokeDeath = VFXStorage:FindFirstChild("SmokeDeath"):Clone()
+		SmokeDeath.CFrame = cframe
+		SmokeDeath.Parent = workspace.Fx
+
+		emitParticles(SmokeDeath)
+		Debris:AddItem(SmokeDeath, 3)
+	end
 end)
 
 AnimateAgentEvent.OnClientEvent:Connect(function(model, animName)

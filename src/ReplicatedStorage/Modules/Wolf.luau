@@ -51,10 +51,15 @@ function Wolf:Move()
 	local newPos = currentPos + direction * 4
 	local wrappedPos = Toroidal.wrapPosition(newPos, 50, 50, 4)
 
-	-- self.model:PivotTo(CFrame.lookAt(wrappedPos, wrappedPos + direction))
-	self.model:FindFirstChildOfClass("Humanoid"):MoveTo(wrappedPos)
-
-	self:UpdatePatchTracking(wrappedPos)
+	if (wrappedPos - currentPos).Magnitude > 8 then
+		self.model:PivotTo(CFrame.lookAt(wrappedPos, wrappedPos + direction))
+		self:UpdatePatchTracking(wrappedPos)
+		return false
+	else
+		self.model:FindFirstChildOfClass("Humanoid"):MoveTo(wrappedPos)
+		self:UpdatePatchTracking(wrappedPos)
+		return true
+	end
 end
 
 function Wolf:Eat(wolfGainFromFood)
@@ -64,7 +69,7 @@ function Wolf:Eat(wolfGainFromFood)
 			agent.alive = false
 			self.grid:RemoveOccupant(self.currentPatch, agent)
 			
-			VFXEvent:FireAllClients(agent.model:GetPivot())
+			VFXEvent:FireAllClients(agent.model:GetPivot(), "BloodSplatter")
 			agent.model:Destroy()
 
 			self.energy += wolfGainFromFood

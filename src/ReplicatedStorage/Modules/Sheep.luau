@@ -60,10 +60,16 @@ function Sheep:Move()
 	local wrappedPos = Toroidal.wrapPosition(newPos, 50, 50, 4)
 
 	-- teleportation vs. smooth movement
-	-- self.model:PivotTo(CFrame.lookAt(wrappedPos, wrappedPos + direction))
-	self.model:FindFirstChildOfClass("Humanoid"):MoveTo(wrappedPos)
-
-	self:UpdatePatchTracking(wrappedPos)
+	-- if distance is too large, then we know it wrapped and must teleport
+	if (wrappedPos - currentPos).Magnitude > 8 then
+		self.model:PivotTo(CFrame.lookAt(wrappedPos, wrappedPos + direction))
+		self:UpdatePatchTracking(wrappedPos)
+		return false
+	else
+		self.model:FindFirstChildOfClass("Humanoid"):MoveTo(wrappedPos)
+		self:UpdatePatchTracking(wrappedPos)
+		return true
+	end
 end
 
 function Sheep:Eat(grassRegrowthTime, sheepGainFromFood)

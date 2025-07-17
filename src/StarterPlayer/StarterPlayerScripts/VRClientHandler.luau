@@ -8,7 +8,6 @@ local StarterGui = game:GetService("StarterGui")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
-local VRService = game:GetService("VRService")
 
 -- Modules
 local VRLib = require(ReplicatedStorage.Modules:WaitForChild("VRLib"))
@@ -61,9 +60,9 @@ char.Head.Transparency = 1
 --[[Main VR Update Loop]]
 
 RunService.RenderStepped:Connect(function(deltaTime)
-	-- Pause all VR camera control if spectating agent
-	if _G.IsInAgentPOV then return end
-	
+	-- Pause all VR camera control if spectating agent OR possessing agent
+	if _G.IsInAgentPOV or _G.ControlledAgent then return end
+
 	local HeadCFrame, RightCFrame, LeftCFrame = VRLib.GetUserCFrames()
 	local Head, Right, Left = VRLib.CalculateUserCFrames(HeadCFrame, RightCFrame, LeftCFrame, Camera.CFrame)
 
@@ -71,7 +70,7 @@ RunService.RenderStepped:Connect(function(deltaTime)
 	ReplicatedStorage.Remote.VRRemote.VR_UpdatePosition:FireServer(Head, Right, Left)
 	VRLib.ApplyUserCFrames(char.Head, char.LeftHand, char.RightHand, Head, Right, Left)
 
-	-- Character movement
+	-- Character movement (only when not possessing an agent)
 	VRLib.MoveCharacter(Camera, char, "Head", ThumbStick1, SpeedDivider)
 
 	-- Reapply camera height while maintaining rotation
@@ -83,28 +82,40 @@ end)
 
 --[[Input Bindings]]
 
--- Movement: Thumbstick 1
+-- Movement: Thumbstick 1 (no interference with agent possession)
 ContextActionService:BindAction("Thumbstick1", function(_, _, input)
-	ThumbStick1 = Vector3.new(input.Position.X, 0, -input.Position.Y)
+	if not _G.ControlledAgent then
+		-- Normal VR movement when not possessing an agent
+		ThumbStick1 = Vector3.new(input.Position.X, 0, -input.Position.Y)
+	end
+	-- When possessing an agent, this input is handled by the main client script (PointOfView)
 end, false, Enum.KeyCode.Thumbstick1)
 
--- Rotation: Thumbstick 2
+-- Rotation: Thumbstick 2 (only active when not possessing an agent)
 ContextActionService:BindAction("Thumbstick2", function(_, _, input)
-	local xInput = input.Position.X -- left/right
+	-- Only allow VR rotation when not possessing an agent
+	if _G.ControlledAgent then return end
 
+	local xInput = input.Position.X -- left/right
 	if math.abs(xInput) > DEADZONE and not isRotating then
 		isRotating = true
-
 		rotationConnection = RunService.Heartbeat:Connect(function(dt)
+			-- Double-check we're still not possessing an agent
+			if _G.ControlledAgent then
+				if rotationConnection then
+					rotationConnection:Disconnect()
+					rotationConnection = nil
+				end
+				isRotating = false
+				return
+			end
+
 			local updatedInput = input.Position
 			local yawSpeed = -updatedInput.X * MAX_ROTATION_SPEED * dt -- horizontal rotation only
-
 			local currentCFrame = Camera.CFrame
 			local rotated = currentCFrame * CFrame.Angles(0, yawSpeed, 0)
-
 			Camera.CFrame = rotated
 		end)
-
 	elseif math.abs(xInput) <= DEADZONE and isRotating then
 		isRotating = false
 		if rotationConnection then
@@ -114,7 +125,7 @@ ContextActionService:BindAction("Thumbstick2", function(_, _, input)
 	end
 end, false, Enum.KeyCode.Thumbstick2)
 
--- Left hand grab
+--[[Left hand grab
 ContextActionService:BindAction("LeftGrip", function(_, state)
 	if state == Enum.UserInputState.Begin then
 		ReplicatedStorage.Remote.VRRemote.VR_Grabbed:FireServer("LeftHand", "begin")
@@ -130,4 +141,4 @@ ContextActionService:BindAction("RightGrip", function(_, state)
 	elseif state == Enum.UserInputState.End then
 		ReplicatedStorage.Remote.VRRemote.VR_Grabbed:FireServer("RightHand", "end")
 	end
-end, false, Enum.KeyCode.ButtonR1)
+end, false, Enum.KeyCode.ButtonR1)]]

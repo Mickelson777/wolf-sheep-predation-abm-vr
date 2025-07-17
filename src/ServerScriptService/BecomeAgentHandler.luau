@@ -3,6 +3,8 @@ local BecomeAgentHandler = {}
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
+local Toroidal = require(ReplicatedStorage.Modules:WaitForChild("Toroidal"))
+
 local Remotes = ReplicatedStorage.Remote:WaitForChild("BecomeAgentRemote")
 
 local possessedAgents = {} -- [player] = agent (Sheep or Wolf object)
@@ -102,6 +104,15 @@ function BecomeAgentHandler.Initialize(sheep, wolves, paramTable, grass)
 
 			-- apply movement
 			humanoidRootPart.CFrame = humanoidRootPart.CFrame + moveVec
+
+			-- toroidal wrapping
+			local newPos = humanoidRootPart.Position
+			local wrappedPos = Toroidal.wrapPosition(newPos, 50, 50, 4)
+
+			-- only teleport if wrapping occurred
+			if (wrappedPos - newPos).Magnitude > 1e-2 then
+				humanoidRootPart.CFrame = CFrame.new(wrappedPos) * humanoidRootPart.CFrame.Rotation
+			end
 
 			-- update patch position
 			agent:UpdatePatchTracking(humanoidRootPart.Position)

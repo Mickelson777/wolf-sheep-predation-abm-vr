@@ -5,6 +5,8 @@ local startEvent = ReplicatedStorage.Remote.GameRemote:WaitForChild("Start")
 local parameterChangeEvent = ReplicatedStorage.Remote.GameRemote:WaitForChild("ParameterChange")
 local versionChangeEvent = ReplicatedStorage.Remote.GameRemote:WaitForChild("VersionChange")
 
+local VFXEvent = ReplicatedStorage.Remote.VisualRemote:WaitForChild("VFXEvent")
+
 local BecomeAgentRemoteEvents = ReplicatedStorage.Remote:WaitForChild("BecomeAgentRemote")
 
 local PatchGrid = require(ReplicatedStorage.Modules.PatchGrid)
@@ -172,9 +174,11 @@ local function runSimulation()
 				
 				-- alive and not possessed
 				task.spawn(function()
-					sheep:Move()
-					
-					task.wait(0.15)
+					local didSmoothWalkTo = sheep:Move()
+
+					if didSmoothWalkTo then
+						task.wait(0.15)
+					end
 
 					if grass then
 						sheep.energy -= 1
@@ -183,6 +187,7 @@ local function runSimulation()
 						sheep:Eat(parameters.GrassRegrowthTime, parameters.SheepGain)
 
 						if sheep.energy <= 0 then
+							VFXEvent:FireAllClients(sheep.model:GetPivot(), "SmokeDeath")
 							sheep.alive = false
 							sheep.model:Destroy()
 						end
@@ -208,16 +213,19 @@ local function runSimulation()
 				end
 
 				task.spawn(function()
-					wolf:Move()
+					local didSmoothWalkTo = wolf:Move()
 					
-					task.wait(0.15)
-
+					if didSmoothWalkTo then
+						task.wait(0.15)
+					end
+					
 					wolf.energy -= 1
 					wolf.model:SetAttribute("Energy", wolf.energy)
 					
 					wolf:Eat(parameters.WolfGain)
 
 					if wolf.energy <= 0 then
+						VFXEvent:FireAllClients(wolf.model:GetPivot(), "SmokeDeath")
 						wolf.alive = false
 						wolf.model:Destroy()
 					end
