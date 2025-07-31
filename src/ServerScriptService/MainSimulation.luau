@@ -177,7 +177,7 @@ local function runSimulation()
 					local didSmoothWalkTo = sheep:Move()
 
 					if didSmoothWalkTo then
-						task.wait(0.15)
+						task.wait(0.1)
 					end
 
 					if grass then
@@ -216,7 +216,7 @@ local function runSimulation()
 					local didSmoothWalkTo = wolf:Move()
 					
 					if didSmoothWalkTo then
-						task.wait(0.15)
+						task.wait(0.1)
 					end
 					
 					wolf.energy -= 1

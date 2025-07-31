@@ -45,6 +45,9 @@ local lastControlledAgent = nil
 -- direction of movement
 local moveDirection = Vector3.zero
 
+-- movement states
+local lastSentTime = 0
+
 -- track pressed keys for diagonal movement (keyboard)
 local pressedKeys = {
 	[Enum.KeyCode.W] = false,
@@ -122,17 +125,14 @@ end
 -- make head and everything else transparent so it doesn't obstruct view
 local function setTransparency(model, value)
 	if model.Name == "Sheep" then
-		local head = model:FindFirstChild("Head")
-		if head then
-			head.LocalTransparencyModifier = value
-			for _, child in ipairs(head:GetChildren()) do
-				if child:IsA("BasePart") then
-					child.LocalTransparencyModifier = value
-				end
+		for _, partName in ipairs({"Head", "Hair", "Neck"}) do
+			local part = model:FindFirstChild(partName)
+			if part and part:IsA("BasePart") then
+				part.LocalTransparencyModifier = value
 			end
 		end
 	elseif model.Name == "Wolf" then
-		for _, partName in ipairs({ "Head", "Eyes", "Jaw", "LeftEar", "Muzzle", "Neck", "Nose", "RightEar" }) do
+		for _, partName in ipairs({"Head", "Neck", "Right Ear", "Left Ear"}) do
 			local part = model:FindFirstChild(partName)
 			if part and part:IsA("BasePart") then
 				part.LocalTransparencyModifier = value
@@ -438,13 +438,13 @@ ReplicatedStorage.Remote.BecomeAgentRemote.PossessionConfirmed.OnClientEvent:Con
 			if state == Enum.UserInputState.Begin and _G.ControlledAgent then
 				ReplicatedStorage.Remote.BecomeAgentRemote.RequestUnpossession:FireServer()
 			end
-		end, false, Enum.KeyCode.ButtonY)
+		end, false, Enum.KeyCode.ButtonA)
 
 		ContextActionService:BindAction("VREatAction", function(_, state)
 			if state == Enum.UserInputState.Begin and _G.ControlledAgent then
 				ReplicatedStorage.Remote.BecomeAgentRemote.Eat:FireServer()
 			end
-		end, false, Enum.KeyCode.ButtonA)
+		end, false, Enum.KeyCode.ButtonY)
 		
 		setTransparency(agentModel, 1)
 	else
@@ -519,8 +519,13 @@ end)
 RunService.Heartbeat:Connect(function(dt)
 	-- retrieve the currently possessed agent
 	local agentModel = _G.ControlledAgent
-
+	local rootPart
+	
 	if agentModel then
+		rootPart = agentModel:FindFirstChild("HumanoidRootPart")
+	end
+	
+	if rootPart then
 		if isVR then
 			-- VR camera handling - first person view
 			local head = agentModel:FindFirstChild("Head")
@@ -532,9 +537,10 @@ RunService.Heartbeat:Connect(function(dt)
 			-- keyboard/mouse camera and rotation handling
 			local delta = UserInputService:GetMouseDelta()
 
-			-- send x-rotation to server instead of applying directly
+			-- applying x-rotation directly (significant server delay otherwise)
 			if delta.X ~= 0 then
-				ReplicatedStorage.Remote.BecomeAgentRemote.Rotate:FireServer(-delta.X * 0.002)
+				rootPart.CFrame = rootPart.CFrame * CFrame.Angles(0, -delta.X * 0.002, 0)
+				ReplicatedStorage.Remote.BecomeAgentRemote.Rotate:FireServer()
 			end
 
 			-- manage y-rotation on client (server doesn't need it for anything)
@@ -542,20 +548,25 @@ RunService.Heartbeat:Connect(function(dt)
 			pitch = math.clamp(pitch, minPitch, maxPitch)
 
 			-- third-person camera based on humanoid root part
-			local cameraOffset = Vector3.new(0, 4.5, 7) -- (up, back)
-			local rootPart = agentModel:FindFirstChild("HumanoidRootPart")
-			if rootPart then
-				local lookVector = rootPart.CFrame.LookVector
-				local thirdPersonPos = rootPart.Position - (lookVector * cameraOffset.Z) + Vector3.new(0, cameraOffset.Y, 0)
+			local cameraOffset = Vector3.new(0, 4.5, 7)
+			local lookVector = rootPart.CFrame.LookVector
+			local thirdPersonPos = rootPart.Position - (lookVector * cameraOffset.Z) + Vector3.new(0, cameraOffset.Y, 0)
 
-				camera.CameraType = Enum.CameraType.Scriptable
-				camera.CFrame = CFrame.new(thirdPersonPos, rootPart.Position)
-			end
+			camera.CameraType = Enum.CameraType.Scriptable
+			camera.CFrame = CFrame.new(thirdPersonPos, rootPart.Position)
 		end
 
-		-- send movement input to server to replicate (works for both VR and keyboard)
+		-- applying movement directly (not server!!) (works for both VR and keyboard)
 		if moveDirection.Magnitude > 0 then
-			ReplicatedStorage.Remote.BecomeAgentRemote.Move:FireServer(moveDirection)
+			local speed = 12
+			local worldDir = rootPart.CFrame:VectorToWorldSpace(moveDirection)
+			local moveVec = worldDir * dt * speed
+			rootPart.CFrame = rootPart.CFrame + moveVec
+
+			if tick() - lastSentTime >= 0.05 then
+				ReplicatedStorage.Remote.BecomeAgentRemote.Move:FireServer(moveDirection)
+				lastSentTime = tick()
+			end
 		end
 	end
 end)

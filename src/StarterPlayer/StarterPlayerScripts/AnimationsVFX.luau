@@ -39,11 +39,22 @@ end)
 AnimateAgentEvent.OnClientEvent:Connect(function(model, animName)
 	if model and animName then
 		AnimationManager.playAnimation(model, animName)
+		
+		if animName == "Eat" then
+			local eatSound = model:FindFirstChild("Eat")
+			if eatSound then
+				eatSound:Play()
+			end
+		end
 	end
 end)
 
 agentFolder.ChildAdded:Connect(function(child)
 	if child:IsA("Model") then
 		AnimationManager.playAnimation(child, "Move")
+		local walkSound = child:FindFirstChild("Walk")
+		if walkSound then
+			walkSound:Play()
+		end
 	end
 end)

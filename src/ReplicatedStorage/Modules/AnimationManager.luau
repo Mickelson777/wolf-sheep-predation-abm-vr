@@ -56,4 +56,31 @@ function AnimationManager.stopAnimation(object, animName)
 	end
 end
 
+--[[
+-- function to control walking animation based on movement speed
+function AnimationManager.bindWalkAnimation(object, animName)
+	local humanoid = safeWaitForChild(object, "Humanoid")
+	local animator = safeWaitForChild(humanoid, "Animator")
+	local animationsFolder = safeWaitForChild(object, "Animations")
+	local animationObject = animationsFolder and animationsFolder:FindFirstChild(animName)
+
+	if humanoid and animator and animationObject then
+		local walkTrack = animator:LoadAnimation(animationObject)
+		walkTrack.Name = animName
+
+		humanoid.Running:Connect(function(speed)
+			if speed > 0 then
+				if not walkTrack.IsPlaying then
+					walkTrack:Play()
+				end
+			else
+				if walkTrack.IsPlaying then
+					walkTrack:Stop()
+				end
+			end
+		end)
+	end
+end
+]]
+
 return AnimationManager
